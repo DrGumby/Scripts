@@ -21,10 +21,13 @@ symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
 spaces :: Parser ()
 spaces = skipMany1 space
 
+parseSpecialChar :: Parser Char
+parseSpecialChar = char '\\' >> oneOf "ntr\\\""
+
 parseString :: Parser LispVal
 parseString = do
   char '"'
-  x <- many (noneOf "\"" <|> (char '\\' >> char '\"'))
+  x <- many (noneOf "\"" <|> parseSpecialChar)
   char '"'
   return $ String x
 
@@ -40,12 +43,14 @@ parseAtom = do
     "#f" -> Bool False
     _    -> Atom atom
 
+  
+
 parseNumber :: Parser LispVal
-parseNumber = Number <$> (read <$> many1 digit)
+-- parseNumber = Number <$> (read <$> many1 digit)
 -- parseNumber = read <$> many1 digit >>= return . Number
--- parseNumber = do
---   val <- read <$> many1 digit
---   return $ Number val
+parseNumber = do
+  val <- read <$> many1 digit
+  return $ Number val
 
 -- parseNumber = liftM (Number . read) $ many1 digit
 
