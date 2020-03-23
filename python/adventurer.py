@@ -6,9 +6,9 @@ class Adventurer (object):
     name = ""
     race = ""
     aclass = ""
-    items = []
-    weapons = []
-    armour = []
+    items = {}
+    weapons = {}
+    armour = {}
     cash = 0
     hp = 0
 
