@@ -304,6 +304,13 @@ def money(player, arg):
     upd = table.update(None).where(table.c.id == player['id']).values(money=table.c.money+(int(arg)))
     database.conn.execute(upd)
 
+def item_count(item_id, arg):
+    """ Changes money value in database """
+    global database
+    table = database.Tables.items
+    upd = table.update(None).where(table.c.id == item_id).values(count=table.c.count+(int(arg)))
+    database.conn.execute(upd)
+
 def handle_game(stdscr, player):
     """ Handles current game """
     global database
@@ -378,7 +385,7 @@ def handle_game(stdscr, player):
             return True
 
         # Perform selected action
-        elif key == curses.KEY_ENTER or key in [10, 13, ord('+')]:
+        elif (key == curses.KEY_ENTER or key in [10, 13, ord('+')]) and menus[selected_menu] == 'player':
             cnt = 1
             if key == ord('+'):
                 cnt = int(get_msg(subwindows[3], "How many", boxes[3])) or 0
@@ -400,6 +407,18 @@ def handle_game(stdscr, player):
             player = reload_player(player['id'])[0]
             logging.debug(player)
 
+        elif (key == ord('+') and menus[selected_menu] == 'items'):
+            cnt = int(get_msg(subwindows[3], "How many", boxes[3])) or 0
+            subwindows[3].clear()
+            item = item_menu[item_row].split()[0]
+            item_count(item, cnt)
+
+        elif (key == ord('-') and menus[selected_menu] == 'items'):
+            cnt = int(get_msg(subwindows[3], "How many", boxes[3])) or 0
+            subwindows[3].clear()
+            item = item_menu[item_row].split()[0]
+            item_count(item, -cnt)
+
         elif key == ord('\t'):
             selected_menu = (selected_menu + 1) % 2
                 
@@ -407,6 +426,9 @@ def handle_game(stdscr, player):
 
         # Reload menu and windows
         print_menu(subwindows[1], current_row, player_action_menu)
+        items = get_query(tbl.select(None))
+        items_keys = [str(i['id'])+' '+i['name'] for i in items]
+        items_values = [str(i['count']) for i in items]
         item_menu = []
         for i in items[show_start:show_end]:
             spaces = (maxlen_key - len(str(i['id'])+' '+i['name'])) + (maxlen_val - len(str(i['count']))) + 4
