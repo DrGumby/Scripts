@@ -72,8 +72,7 @@ def get_msg(stdscr, prompt, screen_box=((-1,-1),(0,0))):
     # Get resulting contents
     return(box.gather())
 
-
-def print_menu(stdscr, selected_row, menu):
+def print_menu(stdscr, selected_row, menu, center=True):
     """ Creates a menu selection """
     stdscr.clear()
     h, w = stdscr.getmaxyx()
@@ -82,8 +81,13 @@ def print_menu(stdscr, selected_row, menu):
 
     # Show centered menu items
     for idx, row in enumerate(menu):
-        x = w//2 - len(row)//2
+        if center:
+            x = w//2 - len(row)//2
+        else:
+            x = 1
+
         y = h//2 - len(menu)//2 + idx
+
         if idx == selected_row:
             stdscr.attron(curses.color_pair(1))
             stdscr.addstr(y, x, row)
@@ -160,8 +164,11 @@ def create_interactive_table(stdscr, keys):
     subwindows = []
     textboxes = []
     positions = print_menu(stdscr, current_row, keys)
+    maxlen = max(map(len, keys))
     for i in range(len(keys)):
-        subwindows.append(curses.newwin(1, 15, positions[i][0], positions[i][1]+2))
+        offset = maxlen - len(keys[i])//2
+        logging.debug(offset)
+        subwindows.append(curses.newwin(1, 15, positions[i][0], positions[i][1]+2+offset))
     for idx, window in enumerate(subwindows):
         window.addstr(0, 0, values[idx])
         window.refresh()
@@ -172,6 +179,8 @@ def create_interactive_table(stdscr, keys):
         stdscr.clear()
 
         if key == curses.KEY_ENTER or key in [10, 13]:
+            if keys[current_row] == 'Finish':
+                return values
             curses.curs_set(1)
             textboxes[current_row].edit()
             curses.curs_set(0)
@@ -180,6 +189,8 @@ def create_interactive_table(stdscr, keys):
             current_row -= 1
         elif key == curses.KEY_DOWN and current_row < len(keys)-1:
             current_row += 1
+        elif key == ord('q'):
+            return values
 
         positions = print_menu(stdscr, current_row, keys)
         for idx, window in enumerate(subwindows):
@@ -192,7 +203,26 @@ def create_interactive_table(stdscr, keys):
 
 def create_player(stdscr):
     global database
-    create_interactive_table(stdscr, ['TEst', 'test2'])
+    vals = create_interactive_table(stdscr, ['Name', 'HP', 'Money', 'Ammo', 'Finish'])
+    logging.debug(vals)
+    player = {
+        'name' : vals[0],
+        'hp'   : vals[1],
+        'money': vals[2],
+        'ammo' : vals[3]
+    }
+    database.conn.execute(
+        database.Tables.players.insert(None),
+        [player]
+    )
+    stdscr.refresh()
+
+def delete_player(stdscr, player):
+    global database
+    table = database.Tables.players
+    database.conn.execute(
+        table.delete(None).where(table.c.id == player['id'])
+    )
 
 
 def select_player(stdscr):
@@ -226,10 +256,19 @@ def select_player(stdscr):
             current_row += 1
         elif key == ord('q'):
             return True
+        elif key == curses.KEY_DC:
+            if menu[current_row] != 'New player':
+                delete_player(stdscr, players[current_row])
+                players = get_query(database.Tables.players.select())
+                menu = [str(i['id']) + ' ' + i['name'] for i in players]
+                menu.append('New player')
         elif key == curses.KEY_ENTER or key in [10, 13]:
             logging.debug(menu[current_row])
             if menu[current_row] == 'New player':
                 create_player(stdscr)
+                players = get_query(database.Tables.players.select())
+                menu = [str(i['id']) + ' ' + i['name'] for i in players]
+                menu.append('New player')
             else:
                 return handle_game(stdscr, players[current_row])
 
@@ -273,29 +312,71 @@ def handle_game(stdscr, player):
     # Create 4 subwindows
     boxes, subwindows = make_windows(stdscr)
 
+    # Default menu is player menu
+    menus = ['player', 'items']
+    selected_menu = 0
+
     # Create menu list
     player_action_menu = ['Shoot', 'Craft ammo', 'Take damage', 'Heal damage', 'Spend money', 'Earn money']
     current_row = 0
+    
+    # Create second menu list
+    max_row = boxes[2][1][0] - boxes[2][0][0]-2
+    show_start = 0
+    show_end = max_row-1
+    item_row = 0
+    tbl = database.Tables.items
+    items = get_query(tbl.select(None))
+    items_keys = [str(i['id'])+' '+i['name'] for i in items]
+    items_values = [str(i['count']) for i in items]
+    maxlen_key = max(map(len, items_keys))
+    maxlen_val = max(map(len, items_values))
+    item_menu = []
+    for i in items[show_start:show_end]:
+        spaces = (maxlen_key - len(str(i['id'])+' '+i['name'])) + (maxlen_val - len(str(i['count']))) + 4
+        item_menu.append(str(i['id']) + ' ' + i['name'] + (spaces*' ') + str(i['count']))
+
+    logging.debug(item_menu)
 
     # Add player information table in top left window
     add_table_centered(subwindows[0], list(player.items()))
 
     # Show a menu
     print_menu(subwindows[1], current_row, player_action_menu)
+    print_menu(subwindows[2], item_row, item_menu, False)
+
 
     while True:
         # Read a key
         key = stdscr.getch()
         # Clear the screen
         subwindows[1].clear()
+        subwindows[2].clear()
 
         # Move armound the menu
-        if key == curses.KEY_UP and current_row > 0:
-            current_row -= 1
-        elif key == curses.KEY_DOWN and current_row < len(player_action_menu)-1:
-            current_row += 1
+        if key == curses.KEY_UP:
+            if menus[selected_menu] == 'player' and current_row > 0:
+                current_row -= 1
+            elif menus[selected_menu] == 'items' and item_row > 0:
+                item_row -= 1
+                if item_row <= 1 and show_start > 0:
+                    show_start -= 1
+                    show_end -= 1 
+                    item_row += 1 
+
+        elif key == curses.KEY_DOWN:
+            if menus[selected_menu] == 'player' and current_row < len(player_action_menu)-1:
+                current_row += 1
+            if menus[selected_menu] == 'items' and item_row < len(item_menu)-1:
+                item_row += 1
+                if item_row >= len(item_menu)-1 and show_end < len(items):
+                    show_start += 1
+                    show_end += 1
+                    item_row -= 1
+
         elif key == ord('q'):
             return True
+
         # Perform selected action
         elif key == curses.KEY_ENTER or key in [10, 13, ord('+')]:
             cnt = 1
@@ -319,8 +400,18 @@ def handle_game(stdscr, player):
             player = reload_player(player['id'])[0]
             logging.debug(player)
 
+        elif key == ord('\t'):
+            selected_menu = (selected_menu + 1) % 2
+                
+
+
         # Reload menu and windows
         print_menu(subwindows[1], current_row, player_action_menu)
+        item_menu = []
+        for i in items[show_start:show_end]:
+            spaces = (maxlen_key - len(str(i['id'])+' '+i['name'])) + (maxlen_val - len(str(i['count']))) + 4
+            item_menu.append(str(i['id']) + ' ' + i['name'] + (spaces*' ') + str(i['count']))
+        print_menu(subwindows[2], item_row, item_menu, False)
         add_table_centered(subwindows[0], list(player.items()))
         for i in subwindows:
             i.refresh()

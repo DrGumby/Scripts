@@ -8,6 +8,7 @@ from db import Database
 def pretty_dict(item:dict):
     for i, j in item.items():
         print('{}:\t{}'.format(i.title(), j))
+    print("")
 
 def new_player_interact():
     return {
@@ -91,6 +92,12 @@ class GameShell(cmd.Cmd):
     def do_craft(self, args):
         self.ammo(int(args))
 
+    def do_decrease(self, args):
+        self.decrease(args)
+
+    def do_increase(self, args):
+        self.increase(args)
+
     def show(self, args):
         args = args.split()
         arg = args[0]
@@ -117,7 +124,34 @@ class GameShell(cmd.Cmd):
                 return
             self.show_query(table.select().where(table.c.player == self.current_adv_id))
         
-        
+    def decrease(self, args):
+        if not args:
+            print("No item selected")
+            return
+        args = args.split()
+        if len(args) < 2:
+            cnt = 1
+        else:
+            cnt = int(args[1])
+
+        table = self.database.Tables.items
+        upd = table.update(None).where(table.c.name == args[0]).values(count=table.c.count-cnt)
+        self.database.conn.execute(upd)
+
+    def increase(self, args):
+        if not args:
+            print("No item selected")
+            return
+        args = args.split()
+        if len(args) < 2:
+            cnt = 1
+        else:
+            cnt = int(args[1])
+        table = self.database.Tables.items
+        upd = table.update(None).where(table.c.name == args[0]).values(count=table.c.count+cnt)
+        self.database.conn.execute(upd)
+
+
     def add(self, args):
         args = args.split()
         arg = args[0]
