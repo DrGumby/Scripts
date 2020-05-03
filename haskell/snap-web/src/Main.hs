@@ -7,6 +7,7 @@ import Snap.Core
 import Snap.Http.Server (httpServe, setPort)
 import Snap.Util.FileServe (serveFile)
 import System.Environment (lookupEnv)
+import Snap.Snaplet
 
 showInfo :: MonadSnap m => m ()
 showInfo = sendFile "views/index.html"
