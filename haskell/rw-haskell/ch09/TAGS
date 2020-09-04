@@ -1,0 +1,74 @@
+
+./RecursiveContents.hs,143
+module RecursiveContents RecursiveContents0,1
+getRecursiveContents getRecursiveContents7,8
+getRecursiveContents getRecursiveContents9,10
+
+./ControlledVisit.hs,509
+module ControlledVisit ControlledVisit0,1
+data Info Info10,11
+data Info = Info Info10,11
+    infoPath infoPath11,12
+  , infoPerms infoPerms12,13
+  , infoSize infoSize13,14
+  , infoModTime infoModTime14,15
+maybeIO maybeIO17,18
+maybeIO maybeIO18,19
+getInfo getInfo20,21
+getInfo getInfo21,22
+traverse traverse27,28
+traverse traverse28,29
+getUsefulContents getUsefulContents36,37
+getUsefulContents getUsefulContents37,38
+isDirectory isDirectory41,42
+isDirectory isDirectory42,43
+
+./BetterPredicate.hs,1054
+module BetterPredicate BetterPredicate0,1
+type Predicate Predicate11,12
+getFileSizeErrHandler getFileSizeErrHandler17,18
+getFileSizeErrHandler getFileSizeErrHandler18,19
+getFileSize' getFileSize'20,21
+getFileSize' getFileSize'21,22
+getFileSize getFileSize26,27
+getFileSize getFileSize27,28
+simpleFileSize simpleFileSize32,33
+simpleFileSize simpleFileSize33,34
+betterFind betterFind39,40
+betterFind betterFind40,41
+type InfoP InfoP47,48
+type InfoP a a47,48
+pathP pathP53,54
+pathP pathP54,55
+sizeP sizeP56,57
+sizeP sizeP57,58
+equalP equalP60,61
+equalP equalP61,62
+liftP liftP63,64
+liftP liftP64,65
+liftP2 liftP266,67
+liftP2 liftP267,68
+andP, orP orP69,70
+andP,andP69,70
+andP andP70,71
+orP orP71,72
+greaterP, lesserP lesserP73,74
+greaterP,greaterP73,74
+greaterP greaterP74,75
+lesserP lesserP75,76
+constP constP77,78
+constP constP78,79
+liftPath liftPath80,81
+liftPath liftPath81,82
+(=(83,84
+(====?83,84
+(&&?)&&?86,87
+(||?)||?89,90
+(<?)<?92,93
+(>?)>?95,96
+infix infix98,99
+
+./SimpleFinder.hs,92
+module SimpleFinder SimpleFinder0,1
+simpleFind simpleFind4,5
+simpleFind simpleFind5,6
